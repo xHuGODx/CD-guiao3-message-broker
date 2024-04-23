@@ -81,34 +81,16 @@ class PubSub:
         else:
             raise ValueError("Invalid format")
         
-        if message["command"] == "register":
-            return RegisterMessage(message["user"])
+
         if message["command"] == "subscribe":    
             return SubscribeMessage(message["topic"])
-        if message["command"] == "message":   
-            return TextMessage(message["message"], message.get("topic", None), message["ts"])
+        elif message["command"] == "publish":
+            return PublishMessage(message["message"], message["topic"])
+        elif message["command"] == "list":
+            return ListMessage()
+        elif message["command"] == "cancel":
+            return CancelMessage(message["topic"])
         
-
-        
-
-        """
-        
-        try:
-            header = connection.recv(2)
-            n = int.from_bytes(header,byteorder="big")
-            data = connection.recv(n)
-            dic = json.loads(data)
-            if dic["command"] == "register":
-                return cls.register(dic["user"])
-            if dic["command"] == "Subscribe":
-                return cls.Subscribe(dic["topic"])
-            if dic["command"] == "message":
-                return cls.message(dic["message"], dic.get("topic", None))
-        except json.JSONDecodeError:
-            
-            raise PubSubBadFormat(data)
-        
-        """
  
 
 class PubSubBadFormat(Exception):
