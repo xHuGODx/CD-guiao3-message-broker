@@ -27,18 +27,13 @@ class Broker:
         self.subscriptions = {}
         self.sock = socket.socket()
 
-    def aux_append(topic_str, topic, list):
-        if len(topic) == 0:
-            list.append(topic_str)
-        else:
-            for t, v in topic:
-                Broker.aux_append(topic_str + "/" + t, v, list)   
 
             
         
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics containing values."""
+        return list(self.lastmsg.keys())
 
 
     def get_topic(self, topic):

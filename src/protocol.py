@@ -2,12 +2,18 @@
 import json
 import xml.etree.ElementTree as xml
 import pickle
-from datetime import datetime
 from socket import socket
 
 JSON = 0
 XML = 1
 PICKLE = 2
+
+"""
+    root = ET.fromstring(xmlstring)
+        root.tag
+        root.attrib
+        ...
+"""
 
 
 class Message:
@@ -18,15 +24,31 @@ class Message:
     
 class SubscribeMessage(Message):
     """Message to Subscribe a chat topic."""
+    def __init__(self, topic: str) -> None:
+        """Initializes message"""
+        super().__init__("subscribe")
+        self.topic = topic
     
 class PublishMessage(Message):
     """Message to chat with other clients."""
+    def __init__(self, message: str, topic: str) -> None:
+        """Initializes message"""
+        super().__init__("publish")
+        self.message = message
+        self.topic = topic
 
 class ListMessage(Message):
     """Message to list all chat topics."""
+    def __init__(self) -> None:
+        """Initializes message"""
+        super().__init__("list")
 
 class CancelMessage(Message):
     """Message to cancel a chat topic subscription."""
+    def __init__(self, topic: str = None) -> None:
+        """Initializes message"""
+        super().__init__("cancel")
+        self.topic = topic
 
 
 class PubSub:
@@ -35,26 +57,22 @@ class PubSub:
     @classmethod
     def subscribe(cls, topic: str) -> Message:
         """Subscribe to a chat topic."""
-        print("subscrito (confia)")
-        pass
+        return SubscribeMessage(topic)
     
     @classmethod
     def publish(cls, message: str, topic: str = None) -> Message:
         """Publish a message to a chat topic."""
-        print("aquilo enviou (confia)")
-        pass
+        return PublishMessage(message, topic)
     
     @classmethod
     def list(cls) -> Message:
         """List all chat topics."""
-        print("confia que não há tópicos")
-        pass
+        return ListMessage()
     
     @classmethod
     def cancel(cls) -> Message:
         """Cancel a chat topic subscription."""
-        print("cancelado (confia)")
-        pass
+        return CancelMessage()
    
     @classmethod
     def send_msg(cls, connection: socket, msg: Message):
@@ -83,13 +101,13 @@ class PubSub:
         
 
         if message["command"] == "subscribe":    
-            return SubscribeMessage(message["topic"])
+            return PubSub.subscribe(message["topic"])
         elif message["command"] == "publish":
-            return PublishMessage(message["message"], message["topic"])
+            return PubSub.publish(message["message"], message["topic"])
         elif message["command"] == "list":
-            return ListMessage()
+            return PubSub.list()
         elif message["command"] == "cancel":
-            return CancelMessage(message["topic"])
+            return PubSub.cancel(message["topic"])
         
  
 
