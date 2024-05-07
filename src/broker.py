@@ -19,6 +19,7 @@ class Broker:
 
     def __init__(self):
         """Initialize broker."""
+        print("Broker initialized")
         self.canceled = False
         self._host = "localhost"
         self._port = 5000
@@ -26,6 +27,7 @@ class Broker:
         self.lastmsg = {}
         self.subscriptions = {}
         self.sock = socket.socket()
+        self.sock.bind((self._host, self._port))
 
 
             
