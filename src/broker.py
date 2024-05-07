@@ -73,4 +73,11 @@ class Broker:
         """Run until canceled."""
 
         while not self.canceled:
-            pass
+            self.sock.listen(5)
+            conn, _ = self.sock.accept()
+            data = conn.recv(1024)
+            if not data:
+                break
+            logging.debug("Received %s", data)
+            conn.sendall(data)
+            conn.close()

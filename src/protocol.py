@@ -28,6 +28,10 @@ class SubscribeMessage(Message):
         """Initializes message"""
         super().__init__("subscribe")
         self.topic = topic
+
+    def __repr__(self) -> str:
+        data = {"command": "subscribe", "topic": self.topic}
+        return json.dumps(data)
     
 class PublishMessage(Message):
     """Message to chat with other clients."""
@@ -37,11 +41,19 @@ class PublishMessage(Message):
         self.message = message
         self.topic = topic
 
+    def __repr__(self) -> str:
+        data = {"command": "publish", "message": self.message, "topic": self.topic}
+        return json.dumps(data)
+
 class ListMessage(Message):
     """Message to list all chat topics."""
     def __init__(self) -> None:
         """Initializes message"""
         super().__init__("list")
+    
+    def __repr__(self) -> str:
+        data = {"command": "list"}
+        return json.dumps(data)
 
 class CancelMessage(Message):
     """Message to cancel a chat topic subscription."""
@@ -49,6 +61,10 @@ class CancelMessage(Message):
         """Initializes message"""
         super().__init__("cancel")
         self.topic = topic
+    
+    def __repr__(self) -> str:
+        data = {"command": "cancel", "topic": self.topic}
+        return json.dumps(data)
 
 
 class PubSub:
@@ -79,25 +95,30 @@ class PubSub:
         """Sends through a connection a Message object."""
         message = json.dumps(msg.__dict__).encode("utf-8")
         size = len(message)
+        zero = b'\x00'
         header = size.to_bytes(2, "big")
-        completeMessage = header + message
+        completeMessage = zero + header + message
         connection.sendall(completeMessage)
 
     @classmethod
     def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
-        format = connection.recv(1).decode("utf-8") 
+        format = int.from_bytes(connection.recv(1), 'big') 
+        print("format:", format, ": format")
         if format == JSON:
             """ message in json format """
-            message = json.loads(connection.recv(1024))
+            message = json.loads(connection.recv(1024).decode("utf-8"))
         elif format == XML:
             """ message in xml format """
-            message = xml.fromstring(connection.recv(1024))
+            message = xml.fromstring(connection.recv(1024).decode("utf-8"))
         elif format == PICKLE:
             """ message in pickle format """
-            message = pickle.loads(connection.recv(1024))
+            message = pickle.loads(connection.recv(1024).decode("utf-8"))   
+            print("wtf")
+            pass
         else:
-            raise ValueError("Invalid format")
+            print("format: ", format)
+            pass
         
 
         if message["command"] == "subscribe":    
