@@ -3,6 +3,9 @@ import json
 import xml.etree.ElementTree as xml
 import pickle
 from socket import socket
+import logging
+
+logging.basicConfig(filename="realProtocol.log", level=logging.DEBUG)
 
 JSON = 0
 XML = 1
@@ -139,6 +142,7 @@ class PubSub:
     @classmethod
     def send_msg(cls, connection: socket, msg: Message, format = None):
         """Sends through a connection a Message object."""
+        completeMessage = None
         print(format)
         if format == None:
             format = JSON
@@ -161,8 +165,8 @@ class PubSub:
             formatBytes = format.to_bytes(1, "big")
             header = size.to_bytes(2, "big")
             completeMessage = formatBytes + header + message
-        print(completeMessage)
-        connection.send(completeMessage)
+        if completeMessage != None:
+            connection.send(completeMessage)
         
 
     def req_list(cls):
@@ -189,7 +193,7 @@ class PubSub:
             print("message from xml: " , message)
         elif format == PICKLE:
             """ message in pickle format """
-            message = pickle.loads(connection.recv(size).decode("utf-8"))   
+            message = pickle.loads(connection.recv(size))   
         else:
             pass
         

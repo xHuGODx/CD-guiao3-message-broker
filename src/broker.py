@@ -78,7 +78,11 @@ class Broker:
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics containing values."""
-        return list(self.topics.keys())
+        topics_list = []
+        for topic in self.topics:
+            if self.topics[topic] is not None:
+                topics_list.append(topic)
+        return topics_list
 
 
     def get_topic(self, topic):
@@ -94,10 +98,11 @@ class Broker:
         logging.debug("-----")
         logging.debug("put_topic START!!!")
         logging.debug("topic: "+ topic)
+        logging.debug("value: "+ str(value))
         self.topics[topic] = value
         for curTopic in self.topics:
             logging.debug("curTopic: " + curTopic)
-            if topic.startswith(curTopic):
+            if topic.startswith(curTopic + "/") or topic == curTopic:
                 logging.debug("curTopic is a prefix of topic")
                 if curTopic in self.subscriptions:
                     logging.debug("curTopic in subscriptions")
@@ -117,6 +122,7 @@ class Broker:
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
+        logging.debug("Subscribing %s to %s", address, topic)
         if topic not in self.topics:
             self.topics[topic] = None
             self.subscriptions[topic] = [(address, _format)]
@@ -128,7 +134,9 @@ class Broker:
             self.subscriptions[topic].append((address, _format))
         else:
             logging.debug("Already subscribed %s to %s", address, topic)
-        print(self.subscriptions)
+        logging.debug(self.subscriptions)
+        if self.topics[topic] is not None:
+            PubSub.send_msg(address, PubSub.publish(self.topics[topic], topic), _format)
 
     def unsubscribe(self, topic, address):
         """Unsubscribe to topic by client in address."""

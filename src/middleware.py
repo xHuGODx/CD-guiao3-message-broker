@@ -5,6 +5,7 @@ from queue import LifoQueue, Empty
 from typing import Any
 import socket
 from .protocol import PubSub
+import selectors
 
 
 class MiddlewareType(Enum):
@@ -26,7 +27,9 @@ class Queue:
         self.port = 5000
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
-    
+        self.sel = selectors.DefaultSelector()
+        self.sel.register(self.sock, selectors.EVENT_READ, self.pull)
+
 
     def push(self, value):
         """Sends data to broker."""
