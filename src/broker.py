@@ -6,7 +6,7 @@ from typing import Dict, List, Any, Tuple
 import selectors
 from .protocol import PubSub
 
-logging.basicConfig(filename="log.log", level=logging.DEBUG)
+logging.basicConfig(filename="broker.log", level=logging.DEBUG)
 
 class Serializer(enum.Enum):
     """Possible message serializers."""
@@ -36,8 +36,7 @@ class Broker:
         self.sel.register(self.sock, selectors.EVENT_READ, self.accept)
 
     def accept(self, sock, mask):
-        conn, addr = sock.accept() 
-        print('accepted', conn, 'from', addr)
+        conn, addr = sock.accept() # Should be ready
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
         #Regista ações no respetivo ficheiro
@@ -48,8 +47,6 @@ class Broker:
         try:
             data = PubSub.recv_msg(conn)
             if data:
-                print('Received: ', data)
-
                 command = data.command
 
                 if command == "subscribe":
@@ -99,11 +96,12 @@ class Broker:
             if curTopic.startswith(topic):
                 if curTopic in self.subscriptions:
                     for subscriber in self.subscriptions[curTopic]:
-                        PubSub.send_msg(subscriber[0], PubSub.publish(value, curTopic))
+                        PubSub.send_msg(subscriber[0], PubSub.publish(value, curTopic), subscriber[1])
 
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
         """Provide list of subscribers to a given topic."""
+        print(self.subscriptions)
         return self.subscriptions[topic]
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):

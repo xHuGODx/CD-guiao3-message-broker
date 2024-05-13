@@ -58,19 +58,31 @@ class JSONQueue(Queue):
     """Queue implementation with JSON based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        PubSub.send_msg(self.sock, PubSub.subscribe(topic))
-    
-
+        print("JSONQueue")
+        self.format = 0
+        print("format: ",self.format)
+        ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 0)
+        if _type == MiddlewareType.CONSUMER:
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        PubSub.send_msg(self.sock, PubSub.subscribe(topic))
-
+        print("XMLQueue")
+        self.format = 1
+        print("format: ",self.format)
+        ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 1)
+        if _type == MiddlewareType.CONSUMER:
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        PubSub.send_msg(self.sock, PubSub.subscribe(topic))
+        print("PickleQueue")
+        self.format = 2
+        print("format: ",self.format)
+        ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 2)
+        if _type == MiddlewareType.CONSUMER:
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)

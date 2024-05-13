@@ -33,6 +33,13 @@ class SubscribeMessage(Message):
         data = {"command": "subscribe", "topic": self.topic}
         return json.dumps(data)
     
+    def toXML(self):
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
+    
+    def toPickle(self):
+        data = {"command": "subscribe", "topic": self.topic}
+        return pickle.dumps(data)
+    
 class PublishMessage(Message):
     """Message to chat with other clients."""
     def __init__(self, message: str, topic: str) -> None:
@@ -44,6 +51,13 @@ class PublishMessage(Message):
     def __repr__(self) -> str:
         data = {"command": "publish", "message": self.message, "topic": self.topic}
         return json.dumps(data)
+
+    def toXML(self):
+        return f'<?xml version="1.0"?><data command="publish" topic="{self.topic}" message="{self.message}"></data>'
+    
+    def toPickle(self):
+        data = {"command": "publish", "message": self.message, "topic": self.topic}
+        return pickle.dumps(data)
     
 class ListRequestMessage(Message):
     """Message to list all chat topics."""
@@ -54,6 +68,13 @@ class ListRequestMessage(Message):
     def __repr__(self) -> str:
         data = {"command": "req_list"}
         return json.dumps(data)
+    
+    def toXML(self):
+        return f'<?xml version="1.0"?><data command="req_list"></data>'
+    
+    def toPickle(self):
+        data = {"command": "req_list"}
+        return pickle.dumps(data)
 
 class ListMessage(Message):
     """Message to list all chat topics."""
@@ -64,6 +85,13 @@ class ListMessage(Message):
     def __repr__(self) -> str:
         data = {"command": "list"}
         return json.dumps(data)
+    
+    def toXML(self):
+        return f'<?xml version="1.0"?><data command="list_topics"></data>'
+    
+    def toPickle(self):
+        data = {"command": "list"}
+        return pickle.dumps(data)
 
 class CancelMessage(Message):
     """Message to cancel a chat topic subscription."""
@@ -75,6 +103,13 @@ class CancelMessage(Message):
     def __repr__(self) -> str:
         data = {"command": "cancel", "topic": self.topic}
         return json.dumps(data)
+    
+    def toXML(self):
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
+    
+    def toPickle(self):
+        data = {"command": "cancel", "topic": self.topic}
+        return pickle.dumps(data)
 
 
 class PubSub:
@@ -101,13 +136,28 @@ class PubSub:
         return CancelMessage()
    
     @classmethod
-    def send_msg(cls, connection: socket, msg: Message):
+    def send_msg(cls, connection: socket, msg: Message, format = JSON):
         """Sends through a connection a Message object."""
-        message = json.dumps(msg.__dict__).encode("utf-8")
-        size = len(message)
-        zero = b'\x00'
-        header = size.to_bytes(2, "big")
-        completeMessage = zero + header + message
+        print(format)
+        if format == JSON:
+            message = json.dumps(msg.__dict__).encode("utf-8")
+            size = len(message)
+            format = b'\x00'
+            header = size.to_bytes(2, "big")
+            completeMessage = format + header + message
+        elif format == XML:
+            message = msg.toXML().encode("utf-8")
+            size = len(message)
+            format = b'\x01'
+            header = size.to_bytes(2, "big")
+            completeMessage = format + header + message
+        elif format == PICKLE:
+            message = msg.toPickle()
+            size = len(message)
+            format = b'\x02'
+            header = size.to_bytes(2, "big")
+            completeMessage = format + header + message
+        print(completeMessage)
         connection.send(completeMessage)
         
 
@@ -128,7 +178,11 @@ class PubSub:
             message = json.loads(connection.recv(size).decode("utf-8"))
         elif format == XML:
             """ message in xml format """
-            message = xml.fromstring(connection.recv(size).decode("utf-8"))
+            root = xml.fromstring(connection.recv(size).decode("utf-8"))
+            message = {}
+            for node in root.keys():
+                message[node] = root.get(node)
+            print("message from xml: " , message)
         elif format == PICKLE:
             """ message in pickle format """
             message = pickle.loads(connection.recv(size).decode("utf-8"))   
