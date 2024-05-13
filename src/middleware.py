@@ -30,32 +30,28 @@ class Queue:
     def push(self, value):
         """Sends data to broker."""
         protocolMessage = PubSub.publish(value, self.topic)
-        PubSub.send(self.sock, protocolMessage)
+        PubSub.send_msg(self.sock, protocolMessage)
 
     def pull(self) -> (str, Any):
         """Receives (topic, data) from broker.
 
         Should BLOCK the consumer!"""
-        while True:
-            message = PubSub.recv_msg(self.sock)
-            if message.topic == self.topic:
-                return (message.topic, message.message)
-            else:
-                pass
+        protocolMessage = PubSub.recv_msg(self.sock)
+        if protocolMessage is None: 
+            return None
+        
+        return (protocolMessage.topic, protocolMessage.message)
 
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        protocolMessage = PubSub.list()
-        PubSub.send(self.sock, protocolMessage)
-        message = PubSub.recv_msg(self.sock)
-        callback(message.message)
+        protocolMessage = PubSub.ask_topics()
+        PubSub.send_msg(self.socket, protocolMessage)
 
     def cancel(self):
         """Cancel subscription."""
         protocolMessage = PubSub.cancel(self.topic)
-        PubSub.send(self.sock, protocolMessage)
-        self.sock.close()
+        PubSub.send_msg(self.sock, protocolMessage)
 
 
 class JSONQueue(Queue):
@@ -68,7 +64,13 @@ class JSONQueue(Queue):
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
+    def __init__(self, topic, _type=MiddlewareType.CONSUMER):
+        super().__init__(topic, _type)
+        PubSub.send_msg(self.sock, PubSub.subscribe(topic))
 
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
+    def __init__(self, topic, _type=MiddlewareType.CONSUMER):
+        super().__init__(topic, _type)
+        PubSub.send_msg(self.sock, PubSub.subscribe(topic))

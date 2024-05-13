@@ -3,6 +3,8 @@ import logging
 import enum
 import socket
 from typing import Dict, List, Any, Tuple
+import selectors
+from .protocol import PubSub
 
 logging.basicConfig(filename="log.log", level=logging.DEBUG)
 
@@ -24,28 +26,80 @@ class Broker:
         self._host = "localhost"
         self._port = 5000
         self.topics = {}
-        self.lastmsg = {}
         self.subscriptions = {}
-        self.sock = socket.socket()
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind((self._host, self._port))
+        self.sock.listen(100)
 
+        self.sel = selectors.DefaultSelector()
+        self.sel.register(self.sock, selectors.EVENT_READ, self.accept)
 
+    def accept(self, sock, mask):
+        conn, addr = sock.accept() 
+        print('accepted', conn, 'from', addr)
+        conn.setblocking(False)
+        self.sel.register(conn, selectors.EVENT_READ, self.read)
+        #Regista ações no respetivo ficheiro
+        logging.debug(f"Accepted connection from {addr}")
+
+    def read(self, conn, mask):
+
+        try:
+            data = PubSub.recv_msg(conn)
+            if data:
+                print('Received: ', data)
+
+                command = data.command
+
+                if command == "subscribe":
+                    self.subscribe(data.topic, conn)
+
+                elif command == "publish":
+                    self.put_topic(data.topic, data.message)
+
+                elif command == "cancel":
+                    self.unsubscribe(data.topic, conn)
+
+                elif command == "list_topics":
+                    self.list_topics(conn)
+
+                else:
+                    print("Unknown command")
+        
+        except ConnectionResetError:
+            print("Connection closed")
+            for topic in self.subscriptions:
+                for subscriber in self.subscriptions[topic]:
+                    if subscriber[0] == conn:
+                        self.subscriptions[topic].remove(subscriber)
+                        break
+            self.sel.unregister(conn)
+            conn.close()
             
         
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics containing values."""
-        return list(self.lastmsg.keys())
+        return list(self.topics.keys())
 
 
     def get_topic(self, topic):
         """Returns the currently stored value in topic."""
-        return self.lastmsg[topic]
+        print(self.topics)
+        if topic not in self.topics:
+            return None
+        return self.topics[topic]
 
 
     def put_topic(self, topic, value):
         """Store in topic the value."""
-        self.lastmsg[topic] = value
+        self.topics[topic] = value
+        for curTopic in self.topics:
+            if curTopic.startswith(topic):
+                if curTopic in self.subscriptions:
+                    for subscriber in self.subscriptions[curTopic]:
+                        PubSub.send_msg(subscriber[0], PubSub.publish(value, curTopic))
 
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
@@ -54,7 +108,13 @@ class Broker:
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
-        if (address, _format) not in self.subscriptions[topic]:
+        if topic not in self.topics:
+            self.topics[topic] = None
+            self.subscriptions[topic] = [(address, _format)]
+        elif topic not in self.subscriptions:
+            logging.debug("Subscribed %s to %s", address, topic)
+            self.subscriptions[topic] = [(address, _format)]
+        elif (address, _format) not in self.subscriptions[topic]:
             logging.debug("Subscribed %s to %s", address, topic)
             self.subscriptions[topic].append((address, _format))
         else:
@@ -73,11 +133,7 @@ class Broker:
         """Run until canceled."""
 
         while not self.canceled:
-            self.sock.listen(5)
-            conn, _ = self.sock.accept()
-            data = conn.recv(1024)
-            if not data:
-                break
-            logging.debug("Received %s", data)
-            conn.sendall(data)
-            conn.close()
+            events = self.sel.select(timeout=None)
+            for key, mask in events:
+                callback = key.data
+                callback(key.fileobj, mask)

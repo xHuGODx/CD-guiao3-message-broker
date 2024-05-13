@@ -44,12 +44,22 @@ class PublishMessage(Message):
     def __repr__(self) -> str:
         data = {"command": "publish", "message": self.message, "topic": self.topic}
         return json.dumps(data)
+    
+class ListRequestMessage(Message):
+    """Message to list all chat topics."""
+    def __init__(self) -> None:
+        """Initializes message"""
+        super().__init__("req_list")
+    
+    def __repr__(self) -> str:
+        data = {"command": "req_list"}
+        return json.dumps(data)
 
 class ListMessage(Message):
     """Message to list all chat topics."""
     def __init__(self) -> None:
         """Initializes message"""
-        super().__init__("list")
+        super().__init__("list_topics")
     
     def __repr__(self) -> str:
         data = {"command": "list"}
@@ -98,26 +108,31 @@ class PubSub:
         zero = b'\x00'
         header = size.to_bytes(2, "big")
         completeMessage = zero + header + message
-        connection.sendall(completeMessage)
+        connection.send(completeMessage)
+        
+
+    def req_list(cls):
+        """Request list of chat topics."""
+        return ListRequestMessage()
 
     @classmethod
     def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
         format = int.from_bytes(connection.recv(1), 'big') 
-        print("format:", format, ": format")
+        header = connection.recv(2)
+        size = int.from_bytes(header, 'big')
+        if size == 0:
+            return None
         if format == JSON:
             """ message in json format """
-            message = json.loads(connection.recv(1024).decode("utf-8"))
+            message = json.loads(connection.recv(size).decode("utf-8"))
         elif format == XML:
             """ message in xml format """
-            message = xml.fromstring(connection.recv(1024).decode("utf-8"))
+            message = xml.fromstring(connection.recv(size).decode("utf-8"))
         elif format == PICKLE:
             """ message in pickle format """
-            message = pickle.loads(connection.recv(1024).decode("utf-8"))   
-            print("wtf")
-            pass
+            message = pickle.loads(connection.recv(size).decode("utf-8"))   
         else:
-            print("format: ", format)
             pass
         
 
@@ -125,7 +140,7 @@ class PubSub:
             return PubSub.subscribe(message["topic"])
         elif message["command"] == "publish":
             return PubSub.publish(message["message"], message["topic"])
-        elif message["command"] == "list":
+        elif message["command"] == "req_list":
             return PubSub.list()
         elif message["command"] == "cancel":
             return PubSub.cancel(message["topic"])
