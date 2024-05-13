@@ -24,20 +24,21 @@ class Message:
     
 class SubscribeMessage(Message):
     """Message to Subscribe a chat topic."""
-    def __init__(self, topic: str) -> None:
+    def __init__(self, topic: str, format: str) -> None:
         """Initializes message"""
         super().__init__("subscribe")
         self.topic = topic
+        self.format = format
 
     def __repr__(self) -> str:
-        data = {"command": "subscribe", "topic": self.topic}
+        data = {"command": "subscribe", "topic": self.topic, "format": self.format}
         return json.dumps(data)
     
     def toXML(self):
-        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}" format="{self.format}"></data>'
     
     def toPickle(self):
-        data = {"command": "subscribe", "topic": self.topic}
+        data = {"command": "subscribe", "topic": self.topic, "format": self.format}
         return pickle.dumps(data)
     
 class PublishMessage(Message):
@@ -116,9 +117,9 @@ class PubSub:
     """Computação Distribuida Protocol."""
     
     @classmethod
-    def subscribe(cls, topic: str) -> Message:
+    def subscribe(cls, topic: str, format: str) -> Message:
         """Subscribe to a chat topic."""
-        return SubscribeMessage(topic)
+        return SubscribeMessage(topic, format)
     
     @classmethod
     def publish(cls, message: str, topic: str = None) -> Message:
@@ -136,27 +137,30 @@ class PubSub:
         return CancelMessage()
    
     @classmethod
-    def send_msg(cls, connection: socket, msg: Message, format = JSON):
+    def send_msg(cls, connection: socket, msg: Message, format = None):
         """Sends through a connection a Message object."""
+        print(format)
+        if format == None:
+            format = JSON
         print(format)
         if format == JSON:
             message = json.dumps(msg.__dict__).encode("utf-8")
             size = len(message)
-            format = b'\x00'
+            formatBytes = format.to_bytes(1, "big")
             header = size.to_bytes(2, "big")
-            completeMessage = format + header + message
+            completeMessage = formatBytes + header + message
         elif format == XML:
             message = msg.toXML().encode("utf-8")
             size = len(message)
-            format = b'\x01'
+            formatBytes = format.to_bytes(1, "big")
             header = size.to_bytes(2, "big")
-            completeMessage = format + header + message
+            completeMessage = formatBytes + header + message
         elif format == PICKLE:
             message = msg.toPickle()
             size = len(message)
-            format = b'\x02'
+            formatBytes = format.to_bytes(1, "big")
             header = size.to_bytes(2, "big")
-            completeMessage = format + header + message
+            completeMessage = formatBytes + header + message
         print(completeMessage)
         connection.send(completeMessage)
         
@@ -191,7 +195,7 @@ class PubSub:
         
 
         if message["command"] == "subscribe":    
-            return PubSub.subscribe(message["topic"])
+            return PubSub.subscribe(message["topic"], message["format"])
         elif message["command"] == "publish":
             return PubSub.publish(message["message"], message["topic"])
         elif message["command"] == "req_list":

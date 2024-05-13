@@ -19,6 +19,7 @@ class Queue:
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         """Create Queue."""
+        self.format = 0
         self.topic = topic
         self._type = _type
         self.host = 'localhost'
@@ -30,7 +31,7 @@ class Queue:
     def push(self, value):
         """Sends data to broker."""
         protocolMessage = PubSub.publish(value, self.topic)
-        PubSub.send_msg(self.sock, protocolMessage)
+        PubSub.send_msg(self.sock, protocolMessage, self.format)
 
     def pull(self) -> (str, Any):
         """Receives (topic, data) from broker.
@@ -46,12 +47,12 @@ class Queue:
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         protocolMessage = PubSub.ask_topics()
-        PubSub.send_msg(self.socket, protocolMessage)
+        PubSub.send_msg(self.socket, protocolMessage, self.format)
 
     def cancel(self):
         """Cancel subscription."""
         protocolMessage = PubSub.cancel(self.topic)
-        PubSub.send_msg(self.sock, protocolMessage)
+        PubSub.send_msg(self.sock, protocolMessage, self.format)
 
 
 class JSONQueue(Queue):
@@ -63,7 +64,7 @@ class JSONQueue(Queue):
         print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 0)
         if _type == MiddlewareType.CONSUMER:
-            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
@@ -74,7 +75,7 @@ class XMLQueue(Queue):
         print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 1)
         if _type == MiddlewareType.CONSUMER:
-            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
@@ -85,4 +86,4 @@ class PickleQueue(Queue):
         print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 2)
         if _type == MiddlewareType.CONSUMER:
-            PubSub.send_msg(self.sock, PubSub.subscribe(topic), self.format)
+            PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)

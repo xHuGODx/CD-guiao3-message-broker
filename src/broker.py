@@ -50,7 +50,7 @@ class Broker:
                 command = data.command
 
                 if command == "subscribe":
-                    self.subscribe(data.topic, conn)
+                    self.subscribe(data.topic, conn, data.format)
 
                 elif command == "publish":
                     self.put_topic(data.topic, data.message)
@@ -91,12 +91,23 @@ class Broker:
 
     def put_topic(self, topic, value):
         """Store in topic the value."""
+        logging.debug("-----")
+        logging.debug("put_topic START!!!")
+        logging.debug("topic: "+ topic)
         self.topics[topic] = value
         for curTopic in self.topics:
-            if curTopic.startswith(topic):
+            logging.debug("curTopic: " + curTopic)
+            if topic.startswith(curTopic):
+                logging.debug("curTopic is a prefix of topic")
                 if curTopic in self.subscriptions:
+                    logging.debug("curTopic in subscriptions")
                     for subscriber in self.subscriptions[curTopic]:
+                        logging.debug("Subscriber found")
                         PubSub.send_msg(subscriber[0], PubSub.publish(value, curTopic), subscriber[1])
+                else:
+                    logging.debug("curTopic not in subscriptions")
+        logging.debug("put_topic END!!!")
+        logging.debug("-----")
 
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
@@ -117,6 +128,7 @@ class Broker:
             self.subscriptions[topic].append((address, _format))
         else:
             logging.debug("Already subscribed %s to %s", address, topic)
+        print(self.subscriptions)
 
     def unsubscribe(self, topic, address):
         """Unsubscribe to topic by client in address."""
