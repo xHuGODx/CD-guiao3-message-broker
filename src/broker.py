@@ -139,10 +139,9 @@ class Broker:
         # else:
             # logging.debug("Already subscribed %s to %s", address, topic)
         # logging.debug(self.subscriptions)
-        """
         if self.topics[topic] is not None:
             PubSub.send_msg(address, PubSub.publish(self.topics[topic], topic), _format)
-        """
+
 
     def unsubscribe(self, topic, address):
         """Unsubscribe to topic by client in address."""
