@@ -83,12 +83,6 @@ def test_multiple_consumers(consumer_JSON, consumer_Pickle, consumer_XML, broker
     producer.run(9)  # iterate only 9 times, consumer iterates 9 + 1 historic
     time.sleep(0.1)  # wait for messages to propagate through the broker to the clients
 
-    print(consumer_JSON.received)
-    print(consumer_Pickle.received)
-    print(consumer_XML.received)
-    for topic in broker.list_topics():
-        print(broker.get_topic(topic))
-    print(TOPIC)
     assert consumer_JSON.received == prev + producer.produced
     assert consumer_Pickle.received == consumer_JSON.received
     assert consumer_Pickle.received == [

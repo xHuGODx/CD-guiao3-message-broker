@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from enum import Enum
 from queue import LifoQueue, Empty
+from time import sleep
 from typing import Any
 import socket
 from .protocol import PubSub
@@ -42,7 +43,8 @@ class Queue:
         Should BLOCK the consumer!"""
         protocolMessage = PubSub.recv_msg(self.sock)
         if protocolMessage is None: 
-            return None
+            sleep(0.1)
+            self.pull()
         
         return (protocolMessage.topic, protocolMessage.message)
 

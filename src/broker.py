@@ -61,8 +61,16 @@ class Broker:
                 elif command == "list_topics":
                     self.list_topics(conn)
 
-                else:
-                    print("Unknown command")
+            else:
+                # print("Connection closed")
+                for topic in self.subscriptions:
+                    for subscriber in self.subscriptions[topic]:
+                        if subscriber[0] == conn:
+                            self.subscriptions[topic].remove(subscriber)
+                            break
+                self.sel.unregister(conn)
+                conn.close()
+
         
         except ConnectionResetError:
             print("Connection closed")
@@ -101,6 +109,7 @@ class Broker:
         logging.debug("topic: "+ topic)
         logging.debug("value: "+ str(value))
         """
+        # print("topic: "+ topic + " value: "+ str(value))
         self.topics[topic] = value
         for curTopic in self.topics:
             # logging.debug("curTopic: " + curTopic)

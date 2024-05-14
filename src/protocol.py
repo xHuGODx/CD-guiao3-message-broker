@@ -176,7 +176,11 @@ class PubSub:
     @classmethod
     def recv_msg(cls, connection: socket) -> Message:
         """Receives through a connection a Message object."""
-        format = int.from_bytes(connection.recv(1), 'big') 
+        format_byted = connection.recv(1)
+        if format_byted == None:
+            return None
+        format = int.from_bytes(format_byted, 'big') 
+
         header = connection.recv(2)
         size = int.from_bytes(header, 'big')
         if size == 0:
