@@ -40,7 +40,7 @@ class Broker:
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.read)
         #Regista ações no respetivo ficheiro
-        logging.debug(f"Accepted connection from {addr}")
+        # logging.debug(f"Accepted connection from {addr}")
 
     def read(self, conn, mask):
 
@@ -95,24 +95,28 @@ class Broker:
 
     def put_topic(self, topic, value):
         """Store in topic the value."""
+        """
         logging.debug("-----")
         logging.debug("put_topic START!!!")
         logging.debug("topic: "+ topic)
         logging.debug("value: "+ str(value))
+        """
         self.topics[topic] = value
         for curTopic in self.topics:
-            logging.debug("curTopic: " + curTopic)
+            # logging.debug("curTopic: " + curTopic)
             if topic.startswith(curTopic + "/") or topic == curTopic:
-                logging.debug("curTopic is a prefix of topic")
+                # logging.debug("curTopic is a prefix of topic")
                 if curTopic in self.subscriptions:
-                    logging.debug("curTopic in subscriptions")
+                    # logging.debug("curTopic in subscriptions")
                     for subscriber in self.subscriptions[curTopic]:
-                        logging.debug("Subscriber found")
+                        # logging.debug("Subscriber found")
                         PubSub.send_msg(subscriber[0], PubSub.publish(value, curTopic), subscriber[1])
-                else:
-                    logging.debug("curTopic not in subscriptions")
+                # else:
+                    # logging.debug("curTopic not in subscriptions")
+        """
         logging.debug("put_topic END!!!")
         logging.debug("-----")
+        """
 
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
@@ -122,19 +126,19 @@ class Broker:
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
-        logging.debug("Subscribing %s to %s", address, topic)
+        # logging.debug("Subscribing %s to %s", address, topic)
         if topic not in self.topics:
             self.topics[topic] = None
             self.subscriptions[topic] = [(address, _format)]
         elif topic not in self.subscriptions:
-            logging.debug("Subscribed %s to %s", address, topic)
+            # logging.debug("Subscribed %s to %s", address, topic)
             self.subscriptions[topic] = [(address, _format)]
         elif (address, _format) not in self.subscriptions[topic]:
-            logging.debug("Subscribed %s to %s", address, topic)
+            # logging.debug("Subscribed %s to %s", address, topic)
             self.subscriptions[topic].append((address, _format))
-        else:
-            logging.debug("Already subscribed %s to %s", address, topic)
-        logging.debug(self.subscriptions)
+        # else:
+            # logging.debug("Already subscribed %s to %s", address, topic)
+        # logging.debug(self.subscriptions)
         """
         if self.topics[topic] is not None:
             PubSub.send_msg(address, PubSub.publish(self.topics[topic], topic), _format)
@@ -145,9 +149,9 @@ class Broker:
         for sub in self.subscriptions[topic]:
             if sub[0] == address:
                 self.subscriptions[topic].remove(sub)
-                logging.debug("Unsubscribed %s from %s", address, topic)
+                # logging.debug("Unsubscribed %s from %s", address, topic)
                 return
-        logging.debug("Not subscribed %s to %s", address, topic)
+        # logging.debug("Not subscribed %s to %s", address, topic)
 
     def run(self):
         """Run until canceled."""

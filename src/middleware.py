@@ -49,7 +49,7 @@ class Queue:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        protocolMessage = PubSub.ask_topics()
+        protocolMessage = PubSub.list()
         PubSub.send_msg(self.socket, protocolMessage, self.format)
 
     def cancel(self):
@@ -62,9 +62,9 @@ class JSONQueue(Queue):
     """Queue implementation with JSON based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        print("JSONQueue")
+        # print("JSONQueue")
         self.format = 0
-        print("format: ",self.format)
+        # print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 0)
         if _type == MiddlewareType.CONSUMER:
             PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)
@@ -73,9 +73,9 @@ class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        print("XMLQueue")
+        # print("XMLQueue")
         self.format = 1
-        print("format: ",self.format)
+        # print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 1)
         if _type == MiddlewareType.CONSUMER:
             PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)
@@ -84,9 +84,9 @@ class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        print("PickleQueue")
+        # print("PickleQueue")
         self.format = 2
-        print("format: ",self.format)
+        # print("format: ",self.format)
         ## PubSub.send_msg(self.sock, PubSub.serialize(self.format), 2)
         if _type == MiddlewareType.CONSUMER:
             PubSub.send_msg(self.sock, PubSub.subscribe(topic, self.format), self.format)

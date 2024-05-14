@@ -143,10 +143,10 @@ class PubSub:
     def send_msg(cls, connection: socket, msg: Message, format = None):
         """Sends through a connection a Message object."""
         completeMessage = None
-        print(format)
+        # print(format)
         if format == None:
             format = JSON
-        print(format)
+        # print(format)
         if format == JSON:
             message = json.dumps(msg.__dict__).encode("utf-8")
             size = len(message)
@@ -190,7 +190,7 @@ class PubSub:
             message = {}
             for node in root.keys():
                 message[node] = root.get(node)
-            print("message from xml: " , message)
+            # print("message from xml: " , message)
         elif format == PICKLE:
             """ message in pickle format """
             message = pickle.loads(connection.recv(size))   
